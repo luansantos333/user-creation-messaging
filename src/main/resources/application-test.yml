@@ -1,0 +1,8 @@
+spring:
+  application:
+    name: user-
+
+client:
+  id: ${CLIENT_ID:default.client-id}
+  secret: ${CLIENT_SECRET:default.client-secret}
+
