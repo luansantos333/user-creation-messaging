@@ -21,9 +21,9 @@ public class UserEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
-    @Column(unique = true, length = 15, nullable = false)
+    @Column(unique = true, length = 30, nullable = false)
     private String username;
-    @Column(length = 72, nullable = false)
+    @Column(length = 100, nullable = false)
     private String password;
     @ManyToMany
     @JoinTable(name = "tb_user_role", joinColumns = @JoinColumn (name = "user_id"), inverseJoinColumns = @JoinColumn (name = "role_id"))

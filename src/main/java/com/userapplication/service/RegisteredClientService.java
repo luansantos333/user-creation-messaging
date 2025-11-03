@@ -14,7 +14,6 @@ import org.springframework.security.oauth2.server.authorization.settings.TokenSe
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
@@ -50,7 +49,7 @@ public class RegisteredClientService implements RegisteredClientRepository {
 
         try {
 
-            ClientEntity clientEntity = clientRepository.findByClientEntityId(Long.parseLong(id)).orElseThrow(() -> new NoSuchElementException("No client found with the id"));
+            ClientEntity clientEntity = clientRepository.findById(Long.parseLong(id)).orElseThrow(() -> new NoSuchElementException("No client found with the id"));
             RegisteredClient.Builder registeredClient = RegisteredClient.withId(clientEntity.getId().toString());
             registeredClient
                     .clientId(clientEntity.getClient_id())
@@ -128,7 +127,7 @@ public class RegisteredClientService implements RegisteredClientRepository {
 
 
         try {
-        ClientEntity clientEntity = clientRepository.findByClientId(clientId).orElseThrow(() -> new NoSuchElementException("No client found with this client id"));
+        ClientEntity clientEntity = clientRepository.findByClientId(clientId);
         RegisteredClient.Builder registeredClient = RegisteredClient.withId(clientEntity.getId().toString());
         registeredClient
                 .clientId(clientEntity.getClient_id())

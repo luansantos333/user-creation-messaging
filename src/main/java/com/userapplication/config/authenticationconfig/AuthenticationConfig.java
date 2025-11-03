@@ -6,10 +6,10 @@ import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
 import com.userapplication.config.customauthenticationprovider.CustomOAuth2Provider;
-import com.userapplication.service.RegisteredClientService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.MediaType;
@@ -17,7 +17,6 @@ import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
-import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.config.annotation.web.configuration.OAuth2AuthorizationServerConfiguration;
 import org.springframework.security.oauth2.server.authorization.config.annotation.web.configurers.OAuth2AuthorizationServerConfigurer;
 import org.springframework.security.oauth2.server.authorization.settings.AuthorizationServerSettings;
@@ -47,7 +46,20 @@ public class AuthenticationConfig {
     }
 
     @Bean
-    @Order(Ordered.HIGHEST_PRECEDENCE)
+    @Order (Ordered.HIGHEST_PRECEDENCE)
+    @Profile("test")
+    public SecurityFilterChain h2InMemoryDatabaseFilter (HttpSecurity httpSecurity) throws Exception {
+
+        return httpSecurity
+                .securityMatcher("/h2-console/**")
+                .authorizeHttpRequests(authorize -> authorize.anyRequest().permitAll())
+                .headers(headers -> headers.frameOptions(frame -> frame.disable()))
+                .build();
+
+    }
+
+    @Bean
+    @Order(2)
     public SecurityFilterChain authorizationServerFilterChain(HttpSecurity http) throws Exception {
 
         OAuth2AuthorizationServerConfigurer authorizationServerConfigurer = OAuth2AuthorizationServerConfigurer.authorizationServer();
@@ -61,16 +73,22 @@ public class AuthenticationConfig {
 
         });
 
+
+
+        http.authenticationProvider(customOAuth2Provider);
+
         return http.build();
 
     }
 
     @Bean
-    @Order(2)
+    @Order(3)
     public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
 
         http.authorizeHttpRequests((authorize) -> authorize.anyRequest().authenticated())
-                .formLogin(Customizer.withDefaults());
+                .formLogin(Customizer.withDefaults())
+                .csrf(c -> c.disable())
+                .httpBasic(Customizer.withDefaults());
 
         return http.build();
 
@@ -118,14 +136,6 @@ public class AuthenticationConfig {
 
     }
 
-    @Bean
-    RegisteredClientRepository registeredClientRepository() {
-
-
-        return new RegisteredClientService();
-
-
-    }
 
 
 }
