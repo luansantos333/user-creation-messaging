@@ -34,10 +34,6 @@ import java.util.UUID;
 @Configuration
 @EnableWebSecurity
 public class AuthenticationConfig {
-    @Value("${client.id}")
-    private String client_id;
-    @Value("${client.secret}")
-    private String client_secret;
     private final CustomOAuth2Provider customOAuth2Provider;
 
     public AuthenticationConfig(CustomOAuth2Provider customOAuth2Provider) {
@@ -67,10 +63,9 @@ public class AuthenticationConfig {
 
             oauth2.oidc(Customizer.withDefaults());
         });
-        http.authorizeHttpRequests(authorizeRequests -> authorizeRequests.anyRequest().authenticated()).exceptionHandling(handler -> {
+        http.authorizeHttpRequests(authorizeRequests -> authorizeRequests.requestMatchers("/oauth2/**", "/.well-known/**").permitAll().anyRequest().authenticated()).exceptionHandling(handler -> {
 
             handler.defaultAuthenticationEntryPointFor(new LoginUrlAuthenticationEntryPoint("/login"), new MediaTypeRequestMatcher(MediaType.TEXT_HTML));
-
         });
 
 

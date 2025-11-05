@@ -19,7 +19,7 @@ public class ClientController {
         this.registeredClientService = registeredClientService;
     }
 
-    @PreAuthorize("hasAuthority('client.write')")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     public ResponseEntity<Void> addNewClient(@RequestBody RegisteredClient registeredClient) {
 
         registeredClientService.save(registeredClient);

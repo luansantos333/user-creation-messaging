@@ -1,8 +1,9 @@
 package com.userapplication.service;
 
+import com.userapplication.entity.UserEntity;
 import com.userapplication.model.User;
+import com.userapplication.repository.RoleRepository;
 import com.userapplication.repository.UserRepository;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -13,18 +14,16 @@ public class AuthenticationService implements UserDetailsService {
 
     private final UserRepository userRepository;
 
-    public AuthenticationService(UserRepository userRepository) {
-
+    public AuthenticationService(UserRepository userRepository, RoleRepository roleRepository) {
         this.userRepository = userRepository;
     }
-
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
 
-        User user = (User) userRepository.findByUsername(username).orElseThrow(() -> new BadCredentialsException("No user found with this username"));
+        UserEntity userEntity = userRepository.findByUsername(username).orElseThrow(() -> new UsernameNotFoundException(username));
 
-        return user;
+        return new User(userEntity);
 
     }
 }

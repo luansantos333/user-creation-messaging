@@ -128,6 +128,14 @@ public class RegisteredClientService implements RegisteredClientRepository {
 
         try {
         ClientEntity clientEntity = clientRepository.findByClientId(clientId);
+
+        if (clientEntity == null) {
+
+            return null;
+
+        }
+
+
         RegisteredClient.Builder registeredClient = RegisteredClient.withId(clientEntity.getId().toString());
         registeredClient
                 .clientId(clientEntity.getClient_id())

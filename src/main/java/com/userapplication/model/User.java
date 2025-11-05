@@ -9,6 +9,16 @@ import java.util.Collection;
 
 public class User extends UserEntity implements UserDetails {
 
+    public User() {
+        super();
+    }
+
+    public User(UserEntity userEntity) {
+        this.setId(userEntity.getId());
+        this.setUsername(userEntity.getUsername());
+        this.setPassword(userEntity.getPassword());
+        this.setRoles(userEntity.getRoles());
+    }
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
