@@ -23,4 +23,8 @@ client:
   name: ${CLIENT_NAME:default.client-name}
   redirect-uri: ${REDIRECT_URI:https://www.google.com.br}
   tokenTTLInSeconds: ${TOKEN_TTL:3600}
-
+logging:
+  level:
+    org:
+      springframework:
+        security: DEBUG

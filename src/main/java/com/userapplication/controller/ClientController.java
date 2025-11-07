@@ -15,6 +15,7 @@ public class ClientController {
 
     private final RegisteredClientService registeredClientService;
 
+
     public ClientController(RegisteredClientService registeredClientService) {
         this.registeredClientService = registeredClientService;
     }
@@ -27,6 +28,8 @@ public class ClientController {
         return new ResponseEntity<>(HttpStatus.CREATED);
 
     }
+
+
 
 
 }

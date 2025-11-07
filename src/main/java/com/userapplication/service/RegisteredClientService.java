@@ -103,6 +103,8 @@ public class RegisteredClientService implements RegisteredClientRepository {
 
             );
 
+            tokenSettings = convertDurationStrings(tokenSettings);
+
             registeredClient.clientSettings(ClientSettings.withSettings(settingsMap).build());
             registeredClient.tokenSettings(TokenSettings.withSettings(tokenSettings).build());
 
@@ -189,6 +191,8 @@ public class RegisteredClientService implements RegisteredClientRepository {
 
         );
 
+        tokenSettings = convertDurationStrings(tokenSettings);
+
         registeredClient.clientSettings(ClientSettings.withSettings(settingsMap).build());
         registeredClient.tokenSettings(TokenSettings.withSettings(tokenSettings).build());
 
@@ -227,6 +231,37 @@ public class RegisteredClientService implements RegisteredClientRepository {
 
     }
 
+    private Map<String, Object> convertDurationStrings(Map<String, Object> settings) {
+        settings.replaceAll((key, value) -> {
+            if (value instanceof String strValue) {
+                if (strValue.startsWith("PT")) {
+                    try {
+                        return java.time.Duration.parse(strValue);
+                    } catch (Exception e) {
+                        return value;
+                    }
+                }
+                if (key != null && key.toLowerCase().contains("algorithm")) {
+                    try {
+                        return org.springframework.security.oauth2.jose.jws.SignatureAlgorithm.from(strValue);
+                    } catch (Exception e) {
+
+                        return value;
+                    }
+                }
+            } else if (value instanceof java.util.Map) {
+                // Handle OAuth2TokenFormat which gets deserialized as a Map
+                @SuppressWarnings("unchecked")
+                java.util.Map<String, Object> mapValue = (java.util.Map<String, Object>) value;
+                if (mapValue.containsKey("value")) {
+                    String formatValue = (String) mapValue.get("value");
+                    return new org.springframework.security.oauth2.server.authorization.settings.OAuth2TokenFormat(formatValue);
+                }
+            }
+            return value;
+        });
+        return settings;
+    }
 
 
 

@@ -6,7 +6,6 @@ import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
 import com.userapplication.config.customauthenticationprovider.CustomOAuth2Provider;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -63,14 +62,10 @@ public class AuthenticationConfig {
 
             oauth2.oidc(Customizer.withDefaults());
         });
-        http.authorizeHttpRequests(authorizeRequests -> authorizeRequests.requestMatchers("/oauth2/**", "/.well-known/**").permitAll().anyRequest().authenticated()).exceptionHandling(handler -> {
+        http.authorizeHttpRequests(authorizeRequests -> authorizeRequests.anyRequest().authenticated()).exceptionHandling(handler -> {
 
             handler.defaultAuthenticationEntryPointFor(new LoginUrlAuthenticationEntryPoint("/login"), new MediaTypeRequestMatcher(MediaType.TEXT_HTML));
         });
-
-
-
-        http.authenticationProvider(customOAuth2Provider);
 
         return http.build();
 

@@ -26,7 +26,7 @@ public class ClientBootstrapConfig {
     @Value("${client.id}")
     private String clientId;
     @Value("${client.tokenTTLInSeconds}")
-    private Long tokenDurationInSeconds;
+    private String tokenDurationInSeconds;
     @Value("${client.redirect-uri}")
     private String redirectUri;
 
@@ -41,13 +41,13 @@ public class ClientBootstrapConfig {
 
                 RegisteredClient adminClient = RegisteredClient.withId(UUID.randomUUID().toString())
                         .clientName(clientName)
-                        .clientSecret(clientSecret)
+                        .clientSecret(passwordEncoder.encode(clientSecret))
                         .clientId(clientId)
                         .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
                         .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
                         .scope(OidcScopes.OPENID)
                         .redirectUri(redirectUri)
-                        .tokenSettings(TokenSettings.builder().accessTokenTimeToLive(Duration.ofSeconds(tokenDurationInSeconds)).build())
+                        .tokenSettings(TokenSettings.builder().accessTokenTimeToLive(Duration.ofSeconds(Long.parseLong(tokenDurationInSeconds))).build())
                         .build();
 
                 registeredClientService.save(adminClient);

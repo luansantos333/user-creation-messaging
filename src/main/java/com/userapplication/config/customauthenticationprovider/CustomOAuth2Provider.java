@@ -33,7 +33,7 @@ public class CustomOAuth2Provider implements AuthenticationProvider {
 
         }
 
-        return new UsernamePasswordAuthenticationToken(userDetails, userDetails.getPassword(), userDetails.getAuthorities());
+        return new UsernamePasswordAuthenticationToken(userDetails.getUsername(), userDetails.getPassword(), userDetails.getAuthorities());
 
 
     }
