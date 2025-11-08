@@ -85,7 +85,19 @@ public class AuthenticationConfig {
         http.authorizeHttpRequests((authorize) -> authorize.requestMatchers(HttpMethod.POST, "/api/user").permitAll().anyRequest().authenticated())
                 .formLogin(Customizer.withDefaults())
                 .csrf(c -> c.disable())
-                .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter)))
+                .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter)).accessDeniedHandler((request, response, exception) -> {
+
+                    response.setStatus(403);
+                    response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+                    response.getWriter().write("{\"error\":\"Access Denied\",\"message\":\"" + exception.getMessage() + "\"}");
+                }).authenticationEntryPoint((request, response, authException) -> {
+
+                    response.setStatus(401);
+                    response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+                    response.getWriter().write("{\"error\":\"Unauthorized\",\"message\":\"" + authException.getMessage() + "\"}");
+
+
+                }))
                 .httpBasic(Customizer.withDefaults());
 
         return http.build();
