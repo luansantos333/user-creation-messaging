@@ -11,8 +11,10 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -32,12 +34,15 @@ import java.util.UUID;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 public class AuthenticationConfig {
     private final CustomOAuth2Provider customOAuth2Provider;
+    private final JwtAuthenticationConverter jwtAuthenticationConverter;
 
-    public AuthenticationConfig(CustomOAuth2Provider customOAuth2Provider) {
+    public AuthenticationConfig(CustomOAuth2Provider customOAuth2Provider, JwtAuthenticationConverter jwtAuthenticationConverter) {
 
         this.customOAuth2Provider = customOAuth2Provider;
+        this.jwtAuthenticationConverter = jwtAuthenticationConverter;
     }
 
     @Bean
@@ -67,6 +72,8 @@ public class AuthenticationConfig {
             handler.defaultAuthenticationEntryPointFor(new LoginUrlAuthenticationEntryPoint("/login"), new MediaTypeRequestMatcher(MediaType.TEXT_HTML));
         });
 
+        http.authenticationProvider(customOAuth2Provider);
+
         return http.build();
 
     }
@@ -75,9 +82,10 @@ public class AuthenticationConfig {
     @Order(3)
     public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
 
-        http.authorizeHttpRequests((authorize) -> authorize.anyRequest().authenticated())
+        http.authorizeHttpRequests((authorize) -> authorize.requestMatchers(HttpMethod.POST, "/api/user").permitAll().anyRequest().authenticated())
                 .formLogin(Customizer.withDefaults())
                 .csrf(c -> c.disable())
+                .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter)))
                 .httpBasic(Customizer.withDefaults());
 
         return http.build();

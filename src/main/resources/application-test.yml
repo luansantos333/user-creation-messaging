@@ -16,6 +16,9 @@ spring:
     console:
       enabled: true
       path: "/h2-console"
+  kafka:
+    producer:
+      bootstrap-servers: ${KAFKA_URI:localhost:9092}
 
 client:
   id: ${CLIENT_ID:default.client-id}
@@ -28,3 +31,5 @@ logging:
     org:
       springframework:
         security: DEBUG
+
+

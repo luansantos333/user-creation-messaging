@@ -27,6 +27,13 @@ public class RoleEntity implements GrantedAuthority {
     @ManyToMany(cascade = CascadeType.ALL)
     private List<UserEntity> users = new ArrayList<>();
 
+    public RoleEntity(Long roleId, String roleDescription) {
+
+        this.roleId = roleId;
+        this.roleDescription = roleDescription;
+
+    }
+
 
     @Override
     public String getAuthority() {
