@@ -34,6 +34,11 @@ public class RoleEntity implements GrantedAuthority {
 
     }
 
+    public RoleEntity(Long roleId, String roleDescription, String roleName) {
+        this.roleId = roleId;
+        this.roleDescription = roleDescription;
+        this.roleName = roleName;
+    }
 
     @Override
     public String getAuthority() {

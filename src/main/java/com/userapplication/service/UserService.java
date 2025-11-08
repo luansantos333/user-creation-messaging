@@ -7,17 +7,14 @@ import com.userapplication.entity.RoleEntity;
 import com.userapplication.entity.UserEntity;
 import com.userapplication.repository.RoleRepository;
 import com.userapplication.repository.UserRepository;
-import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -94,8 +91,38 @@ public class UserService {
         }
 
 
-        throw new BadCredentialsException("Invalid username or password");
+        throw new AccessDeniedException("You do not have permission to access this resource");
 
     }
 
+    @Transactional
+    public void deleteUserById(Long id) {
+
+        if (!userRepository.existsById(id)) {
+
+            throw new NoSuchElementException("No User found with this id");
+
+        }
+
+        UserEntity user = userRepository.findById(id).get();
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication.getAuthorities().stream().anyMatch(x -> x.getAuthority().equals("ROLE_ADMIN")) || authentication.getName().equals(user.getUsername())) {
+            userRepository.deleteById(id);
+        } else throw new AccessDeniedException("You do not have permission to access this resource");
+
+
+    }
+
+    @Transactional
+    public void elevateUserPrivillegesToAdmin(String username) {
+
+        UserEntity userEntity = userRepository.findByUsername(username).orElseThrow(() -> new NoSuchElementException("No User found with this username"));
+        RoleEntity roleEntity = roleRepository.findByRoleName("ROLE_ADMIN").orElseThrow(() -> new AccessDeniedException("You do not have permission to access this resource"));
+        userEntity.getRoles().add(new RoleEntity(roleEntity.getRoleId(), roleEntity.getRoleDescription(),  roleEntity.getRoleName()));
+        userRepository.save(userEntity);
+
+
+    }
 }

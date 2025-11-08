@@ -51,5 +51,26 @@ public class UserController {
     }
 
 
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_USER')")
+    @DeleteMapping ("/{id}")
+    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
+
+        userService.deleteUserById(id);
+
+        return ResponseEntity.noContent().build();
+
+
+    }
+
+    @PatchMapping ("/grant/{username}")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity<Void> addAdminPrivilegeToUser (@PathVariable String username) {
+
+        userService.elevateUserPrivillegesToAdmin(username);
+
+
+        return ResponseEntity.noContent().build();
+    }
+
 
 }
