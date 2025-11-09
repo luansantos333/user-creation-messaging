@@ -1,5 +1,7 @@
 spring:
+  application:
+    name: user
   profiles:
-    default: test
+    default: ${USER_APPLICATION_PROFILE:default}
 server:
-  port: 8081
+  port: ${USER_APPLICATION_PORT:8081}

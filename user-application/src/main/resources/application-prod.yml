@@ -13,7 +13,7 @@ spring:
 
   kafka:
     producer:
-      bootstrap-servers: ${KAFKA_URI:localhost:9092}
+      bootstrap-servers: ${KAFKA_URI}
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
       properties:
