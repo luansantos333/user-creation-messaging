@@ -1,9 +1,9 @@
 package com.mailapplication.service;
 
+import com.mailapplication.dto.UserAdminAccessGrant;
 import com.mailapplication.dto.UserCreatedEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -19,8 +19,8 @@ public class MailService {
         this.mailSender = mailSender;
     }
 
-    @KafkaListener(topics = "user-created", groupId = "user-created-group")
-    public UserCreatedEvent sendEmail(UserCreatedEvent userCreatedEvent) {
+    @KafkaListener(topics = "user-created", groupId = "user-created-group", properties = {"spring.json.value.default.type=com.mailapplication.dto.UserCreatedEvent"})
+    public UserCreatedEvent sendEmailUserCreated(UserCreatedEvent userCreatedEvent) {
         SimpleMailMessage mailMessage = new SimpleMailMessage();
 
         logger.info("Sending user-created email...");
@@ -33,6 +33,26 @@ public class MailService {
         logger.info("Email sent successfully...");
 
         return userCreatedEvent;
+
+    }
+
+
+    @KafkaListener(topics = "admin-grant", groupId = "user-admin-grant", properties = {"spring.json.value.default.type=com.mailapplication.dto.UserAdminAccessGrant"})
+    public UserAdminAccessGrant sendEmailUserHasAdminAccess (UserAdminAccessGrant userAdminAccessGrant) {
+
+        SimpleMailMessage mailMessage = new SimpleMailMessage();
+
+        logger.info("Sending user-admin access grant...");
+
+        mailMessage.setSubject("You now have admin access, " + userAdminAccessGrant.email());
+        mailMessage.setText(userAdminAccessGrant.message());
+        mailMessage.setTo(userAdminAccessGrant.email());
+        mailSender.send(mailMessage);
+
+        logger.info("Email sent successfully...");
+
+        return userAdminAccessGrant;
+
 
     }
 

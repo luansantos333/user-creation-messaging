@@ -66,7 +66,7 @@ public class UserController {
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     public ResponseEntity<Void> addAdminPrivilegeToUser (@PathVariable String username) {
 
-        userService.elevateUserPrivillegesToAdmin(username);
+        userService.elevateUserPrivilegesToAdmin(username);
 
 
         return ResponseEntity.noContent().build();

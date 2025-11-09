@@ -3,6 +3,7 @@ package com.userapplication.service;
 import com.userapplication.dto.RoleDTO;
 import com.userapplication.dto.UserDTO;
 import com.userapplication.dto.UserSecureDTO;
+import com.userapplication.dto.kafka.UserAdminAccessGrant;
 import com.userapplication.dto.kafka.UserCreatedEvent;
 import com.userapplication.entity.RoleEntity;
 import com.userapplication.entity.UserEntity;
@@ -18,8 +19,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -45,12 +44,12 @@ public class UserService {
 
         UserEntity user = userRepository.save(userEntity);
 
-        Set<RoleDTO> roleDTOS = user.getRoles().stream().map(x -> new RoleDTO(x.getRoleName())).collect(Collectors.toSet());
-
-        kafkaProducerService.sendUserCreatedEvent(new UserCreatedEvent(user.getId(), Instant.now(), user.getUsername()));
 
 
-        return new UserSecureDTO(user.getId(), user.getUsername(), roleDTOS);
+        kafkaProducerService.sendUserCreatedEvent("user-created", new UserCreatedEvent(user.getId(), Instant.now(), user.getUsername()));
+
+
+        return new UserSecureDTO(user.getId(), user.getUsername(), user.getRoles().stream().map(x -> new RoleDTO(x.getRoleName())).collect(Collectors.toSet()));
 
 
     }
@@ -60,16 +59,7 @@ public class UserService {
 
         entity.setUsername(userDTO.username());
         entity.setPassword(passwordEncoder.encode(userDTO.password()));
-
-        for (RoleDTO roleDTO : userDTO.roles()) {
-
-            Optional<RoleEntity> byRoleName = roleRepository.findByRoleName(roleDTO.role());
-
-            byRoleName.ifPresent(roleEntity -> entity.getRoles().add(roleEntity));
-
-
-        }
-
+        entity.getRoles().add(roleRepository.findByRoleName("ROLE_USER").orElseThrow(NoSuchElementException::new));
 
     }
 
@@ -124,11 +114,12 @@ public class UserService {
     }
 
     @Transactional
-    public void elevateUserPrivillegesToAdmin(String username) {
+    public void elevateUserPrivilegesToAdmin(String username) {
 
         UserEntity userEntity = userRepository.findByUsername(username).orElseThrow(() -> new NoSuchElementException("No User found with this username"));
         RoleEntity roleEntity = roleRepository.findByRoleName("ROLE_ADMIN").orElseThrow(() -> new AccessDeniedException("You do not have permission to access this resource"));
         userEntity.getRoles().add(new RoleEntity(roleEntity.getRoleId(), roleEntity.getRoleDescription(),  roleEntity.getRoleName()));
+        kafkaProducerService.sendUserHasBeenGrantedAdminAccess("admin-grant", new UserAdminAccessGrant(userEntity.getUsername(), "Your user has been granted administrator permissions.", Instant.now()));
         userRepository.save(userEntity);
 
 

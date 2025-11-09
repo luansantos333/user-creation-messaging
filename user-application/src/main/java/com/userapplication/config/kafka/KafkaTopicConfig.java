@@ -19,4 +19,17 @@ public class KafkaTopicConfig {
 
     }
 
+
+    @Bean
+    public NewTopic adminGrantEvent () {
+
+
+        return TopicBuilder.name("admin-grant")
+                .partitions(2)
+                .replicas(1)
+                .build();
+
+
+    }
+
 }
