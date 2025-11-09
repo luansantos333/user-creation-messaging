@@ -21,6 +21,9 @@ spring:
       bootstrap-servers: ${KAFKA_URI:localhost:9092}
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: false
+
 
 client:
   id: ${CLIENT_ID:default.client-id}

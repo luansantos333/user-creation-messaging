@@ -1,6 +1,6 @@
 package com.userapplication.service;
 
-import com.userapplication.dto.UserCreatedEvent;
+import com.userapplication.dto.kafka.UserCreatedEvent;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 

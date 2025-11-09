@@ -1,21 +1,18 @@
 package com.mailapplication.service;
 
 import com.mailapplication.dto.UserCreatedEvent;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.annotation.KafkaListener;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
 @Service
 public class MailService {
-   // @Autowired
+    // @Autowired
     //private JavaMailSender mailSender;
 
 
     @KafkaListener (topics = "user-created", groupId = "user-created-group")
     public UserCreatedEvent sendEmail(UserCreatedEvent userCreatedEvent) {
-      //  SimpleMailMessage mailMessage = new SimpleMailMessage();
+        //  SimpleMailMessage mailMessage = new SimpleMailMessage();
 
 
         System.out.printf("User created: %s%n", userCreatedEvent);

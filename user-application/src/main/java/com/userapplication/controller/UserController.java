@@ -1,11 +1,9 @@
 package com.userapplication.controller;
 
-import com.userapplication.dto.UserCreatedEvent;
 import com.userapplication.dto.UserDTO;
 import com.userapplication.dto.UserSecureDTO;
 import com.userapplication.service.UserService;
 import org.springframework.http.ResponseEntity;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 

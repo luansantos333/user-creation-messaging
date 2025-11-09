@@ -1,9 +1,9 @@
 package com.userapplication.service;
 
 import com.userapplication.dto.RoleDTO;
-import com.userapplication.dto.UserCreatedEvent;
 import com.userapplication.dto.UserDTO;
 import com.userapplication.dto.UserSecureDTO;
+import com.userapplication.dto.kafka.UserCreatedEvent;
 import com.userapplication.entity.RoleEntity;
 import com.userapplication.entity.UserEntity;
 import com.userapplication.repository.RoleRepository;
@@ -16,7 +16,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.util.*;
+import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service

@@ -6,9 +6,8 @@ spring:
       value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
       properties:
           spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JsonDeserializer
-          spring.json.trusted.packages: com.userapplication.dto
+          spring.json.trusted.packages: "*"
           spring.json.value.default.type: com.mailapplication.dto.UserCreatedEvent
-          spring.json.use.type.headers: false
       group-id: user-created-group
   mail:
     host: ${MAIL_HOST:smtp.gmail.com}

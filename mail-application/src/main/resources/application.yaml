@@ -1,3 +1,7 @@
 spring:
   application:
     name: mail-application
+  profiles:
+    default: test
+server:
+  port: 8082

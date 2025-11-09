@@ -1,4 +1,4 @@
-package com.userapplication.dto;
+package com.userapplication.dto.kafka;
 
 import java.time.Instant;
 
