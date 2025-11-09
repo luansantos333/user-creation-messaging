@@ -9,7 +9,9 @@ spring:
           spring.json.trusted.packages: "*"
           spring.json.value.default.type: com.mailapplication.dto.UserCreatedEvent
       group-id: user-created-group
-  mail:
+      enable-auto-commit: true
+      auto-commit-interval: 10000
+custom:
     host: ${MAIL_HOST:smtp.gmail.com}
     port: ${MAIL_PORT:587}
     username: ${MAIL_USERNAME}
