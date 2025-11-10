@@ -1,5 +1,6 @@
 package com.userapplication.controller;
 
+import com.userapplication.dto.PasswordResetTokenDTO;
 import com.userapplication.dto.UserDTO;
 import com.userapplication.dto.UserSecureDTO;
 import com.userapplication.service.UserService;
@@ -71,13 +72,14 @@ public class UserController {
 
         return ResponseEntity.noContent().build();
     }
-    /*
-    @PatchMapping ("/reset/{username}")
-    public ResponseEntity<Void> resetPassword (@PathVariable String username) {
 
+    @PostMapping ("/reset/token/{username}")
+    public ResponseEntity<PasswordResetTokenDTO> getResetToken (@PathVariable String username) {
 
+        PasswordResetTokenDTO passwordResetToken = userService.createPasswordResetToken(username);
+
+        return ResponseEntity.ok().body(passwordResetToken);
 
     }
-*/
 
 }

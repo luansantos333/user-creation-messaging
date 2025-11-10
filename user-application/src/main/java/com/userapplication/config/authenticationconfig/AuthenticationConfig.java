@@ -82,7 +82,8 @@ public class AuthenticationConfig {
     @Order(3)
     public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
 
-        http.authorizeHttpRequests((authorize) -> authorize.requestMatchers(HttpMethod.POST, "/api/user").permitAll().anyRequest().authenticated())
+        http.authorizeHttpRequests((authorize) -> authorize.requestMatchers(HttpMethod.POST, "/api/user").permitAll().requestMatchers(HttpMethod.POST, "/api/user/reset/token/**").permitAll().
+                        anyRequest().authenticated())
                 .formLogin(Customizer.withDefaults())
                 .csrf(c -> c.disable())
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter)).accessDeniedHandler((request, response, exception) -> {
