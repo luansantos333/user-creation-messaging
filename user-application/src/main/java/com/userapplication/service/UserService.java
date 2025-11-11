@@ -16,10 +16,12 @@ import com.userapplication.repository.UserRepository;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.security.auth.login.CredentialExpiredException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -52,7 +54,6 @@ public class UserService {
         mapUserDTOToUser(userDTO, userEntity);
 
         UserEntity user = userRepository.save(userEntity);
-
 
 
         kafkaProducerService.sendUserCreatedEvent("user-created", new UserCreatedEvent(user.getId(), Instant.now(), user.getUsername()));
@@ -127,7 +128,7 @@ public class UserService {
 
         UserEntity userEntity = userRepository.findByUsername(username).orElseThrow(() -> new NoSuchElementException("No User found with this username"));
         RoleEntity roleEntity = roleRepository.findByRoleName("ROLE_ADMIN").orElseThrow(() -> new AccessDeniedException("You do not have permission to access this resource"));
-        userEntity.getRoles().add(new RoleEntity(roleEntity.getRoleId(), roleEntity.getRoleDescription(),  roleEntity.getRoleName()));
+        userEntity.getRoles().add(new RoleEntity(roleEntity.getRoleId(), roleEntity.getRoleDescription(), roleEntity.getRoleName()));
         kafkaProducerService.sendUserHasBeenGrantedAdminAccess("admin-grant", new UserAdminAccessGrant(userEntity.getUsername(), "Your user has been granted administrator permissions.", Instant.now()));
         userRepository.save(userEntity);
 
@@ -148,6 +149,31 @@ public class UserService {
         return new PasswordResetTokenDTO(token.getToken());
 
     }
+
+
+    @Transactional
+    public void resetUserPassword(String username, String token, String password) throws CredentialExpiredException {
+        PassswordResetTokenEntity tokenEntity = tokenRepository.findByToken(token)
+                .orElseThrow(() -> new CredentialExpiredException("Invalid or expired token"));
+
+        if (tokenEntity.getExpirationTime().isBefore(Instant.now())) {
+            throw new CredentialExpiredException("Token has expired");
+        }
+
+        UserEntity user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("No user found with this username"));
+
+        if (!tokenEntity.getUser().equals(user)) {
+            throw new AccessDeniedException("Token does not belong to this user");
+        }
+
+        user.setPassword(passwordEncoder.encode(password));
+        userRepository.save(user);
+
+        tokenRepository.delete(tokenEntity);
+    }
+
+
 
 
 }

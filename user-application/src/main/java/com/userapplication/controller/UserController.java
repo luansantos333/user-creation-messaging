@@ -2,12 +2,14 @@ package com.userapplication.controller;
 
 import com.userapplication.dto.PasswordResetTokenDTO;
 import com.userapplication.dto.UserDTO;
+import com.userapplication.dto.UserResetTokenDTO;
 import com.userapplication.dto.UserSecureDTO;
 import com.userapplication.service.UserService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import javax.security.auth.login.CredentialExpiredException;
 import java.util.List;
 
 @RestController
@@ -73,13 +75,28 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping ("/reset/token/{username}")
-    public ResponseEntity<PasswordResetTokenDTO> getResetToken (@PathVariable String username) {
+    @PostMapping ("/reset/token")
+    public ResponseEntity<PasswordResetTokenDTO> getResetToken (@RequestBody UserResetTokenDTO userResetTokenDTO) {
 
-        PasswordResetTokenDTO passwordResetToken = userService.createPasswordResetToken(username);
+        PasswordResetTokenDTO passwordResetToken = userService.createPasswordResetToken(userResetTokenDTO.username());
 
         return ResponseEntity.ok().body(passwordResetToken);
 
     }
+
+    @PutMapping ("/password")
+    public ResponseEntity<Void> resetPassword (@RequestParam (required = true) String token, @RequestParam (required = true) String username,
+                                               @RequestParam (required = true) String newPassword) throws CredentialExpiredException {
+
+
+        userService.resetUserPassword(username, token, newPassword);
+
+
+        return ResponseEntity.noContent().build();
+
+    }
+
+
+
 
 }

@@ -1,5 +1,6 @@
 package com.mailapplication.service;
 
+import com.mailapplication.dto.PasswordResetTokenEvent;
 import com.mailapplication.dto.UserAdminAccessGrant;
 import com.mailapplication.dto.UserCreatedEvent;
 import org.slf4j.Logger;
@@ -52,6 +53,28 @@ public class MailService {
         logger.info("Email sent successfully...");
 
         return userAdminAccessGrant;
+
+
+    }
+
+
+    @KafkaListener (topics = "password-reset", groupId = "user-password-reset", properties = {"spring.json.value.default.type=com.mailapplication.dto.PasswordResetTokenEvent"})
+    public PasswordResetTokenEvent sendResetTokenToEmail (PasswordResetTokenEvent passwordResetTokenEvent) {
+
+        SimpleMailMessage mailMessage = new SimpleMailMessage();
+
+        logger.info("Sending user-admin access grant...");
+
+        mailMessage.setSubject("Password reset Token");
+        mailMessage.setText("Here is your token to reset your password:\n" + passwordResetTokenEvent.token() +
+                "\n" + "You need to send the token inside the request to change your password, like this: [LINK]/api/user/password?token= " + passwordResetTokenEvent.token() + "\n" + 
+                "Remember, this token is only valid for 30 minutes. If it is not used to reset your password within the specified time, you will need to request a new token. ");
+        mailMessage.setTo(passwordResetTokenEvent.username());
+        mailSender.send(mailMessage);
+
+        logger.info("Email sent successfully...");
+
+        return  passwordResetTokenEvent;
 
 
     }
