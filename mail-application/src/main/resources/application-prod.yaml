@@ -11,8 +11,17 @@ spring:
       enable-auto-commit: true
       auto-commit-interval: ${AUTO_COMMIT_INTERVAL:5000}
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
 custom:
   host: ${MAIL_HOST}
   port: ${MAIL_PORT}
   username: ${MAIL_USERNAME}
   password: ${MAIL_PASSWORD}
+

@@ -12,20 +12,32 @@ spring:
     defer-datasource-initialization: true
 
   kafka:
+    bootstrap-servers: ${KAFKA_URI}
     producer:
       bootstrap-servers: ${KAFKA_URI}
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
       properties:
         spring.json.add.type.headers: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
 client:
   id: ${CLIENT_ID}
   secret: ${CLIENT_SECRET}
   name: ${CLIENT_NAME}
   redirect-uri: ${REDIRECT_URI}
   tokenTTLInSeconds: ${TOKEN_TTL}
-  logging:
-    level:
-      org:
-        springframework:
-          security: DEBUG
+
+logging:
+  level:
+    org:
+      springframework:
+        security: DEBUG

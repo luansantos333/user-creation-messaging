@@ -46,9 +46,9 @@ public class AuthenticationConfig {
     }
 
     @Bean
-    @Order (Ordered.HIGHEST_PRECEDENCE)
+    @Order(Ordered.HIGHEST_PRECEDENCE)
     @Profile("test")
-    public SecurityFilterChain h2InMemoryDatabaseFilter (HttpSecurity httpSecurity) throws Exception {
+    public SecurityFilterChain h2InMemoryDatabaseFilter(HttpSecurity httpSecurity) throws Exception {
 
         return httpSecurity
                 .securityMatcher("/h2-console/**")
@@ -82,7 +82,8 @@ public class AuthenticationConfig {
     @Order(3)
     public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
 
-        http.authorizeHttpRequests((authorize) -> authorize.requestMatchers(HttpMethod.POST, "/api/user").permitAll().requestMatchers(HttpMethod.POST, "/api/user/reset/token/**").permitAll().
+        http.authorizeHttpRequests((authorize) -> authorize.requestMatchers(HttpMethod.POST, "/api/user").permitAll().requestMatchers(HttpMethod.POST, "/api/user/reset/token/**").permitAll().requestMatchers("/actuator/**")
+                        .permitAll().
                         anyRequest().authenticated())
                 .formLogin(Customizer.withDefaults())
                 .csrf(c -> c.disable())
@@ -146,7 +147,6 @@ public class AuthenticationConfig {
 
 
     }
-
 
 
 }

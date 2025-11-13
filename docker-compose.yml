@@ -1,0 +1,148 @@
+name: user-messaging-app
+services:
+  postgresql:
+    image: postgres:18.0-alpine3.22
+    container_name: postgres-db
+    environment:
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-teste123456}
+      POSTGRES_USER: ${DB_USERNAME:-java-user}
+      POSTGRES_DB: ${DB_NAME:-user-messaging-db}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-java-user} -d ${DB_NAME:-user-messaging-db}"]
+      interval: 10s
+      retries: 5
+      start_period: 30s
+      timeout: 10s
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    volumes:
+      - zookeeper_data:/var/lib/zookeeper/data
+      - zookeeper_logs:/var/lib/zookeeper/log
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "2181"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka
+    hostname: kafka
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'PLAINTEXT:PLAINTEXT'
+      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://kafka:9092'
+      KAFKA_LISTENERS: 'PLAINTEXT://0.0.0.0:9092'
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+    ports:
+      - "9092:9092"
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server localhost:9092 || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  user-app:
+    image: luansantos333/user-application:0.0.3
+    container_name: user-app
+    depends_on:
+      postgresql:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    environment:
+      - USER_APPLICATION_PROFILE=${USER_APPLICATION_PROFILE:-prod}
+      - USER_APPLICATION_PORT=${USER_APPLICATION_PORT:-8081}
+      - CLIENT_ID=${CLIENT_ID:-default.client_id}
+      - CLIENT_SECRET=${CLIENT_SECRET:-default.client_secret}
+      - CLIENT_NAME=${CLIENT_NAME:-default.client_name}
+      - DB_NAME=${DB_NAME:-user-messaging-db}
+      - DB_PASSWORD=${DB_PASSWORD:-teste123456}
+      - DB_USERNAME=${DB_USERNAME:-java-user}
+      - KAFKA_URI=${KAFKA_URI:-kafka:9092}
+      - POSTGRES_PORT=${POSTGRES_PORT:-5432}
+      - POSTGRES_URL=${POSTGRES_URL:-postgresql}
+      - REDIRECT_URI=${REDIRECT_URI:-https://www.google.com.br}
+      - TOKEN_TTL=${TOKEN_TTL:-3600}
+    ports:
+      - "8081:8081"
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8081/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  mail-app:
+    image: luansantos333/mail-application:0.0.2
+    container_name: mail-app
+    depends_on:
+      kafka:
+        condition: service_healthy
+      user-app: 
+        condition: service_healthy
+    environment:
+      - MAIL_APPLICATION_PROFILE=${MAIL_APPLICATION_PROFILE:-prod}
+      - KAFKA_URI=${KAFKA_URI:-kafka:9092}
+      - MAIL_HOST=${MAIL_HOST:-smtp.gmail.com}
+      - MAIL_PORT=${MAIL_PORT:-587}
+      - MAIL_USERNAME=${MAIL_USERNAME}
+      - MAIL_PASSWORD=${MAIL_PASSWORD}
+    ports:
+      - "8082:8082"
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8082/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
+  kafka_data:
+    driver: local
+  zookeeper_data:
+    driver: local
+  zookeeper_logs:
+    driver: local
