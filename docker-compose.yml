@@ -83,9 +83,9 @@ services:
     environment:
       - USER_APPLICATION_PROFILE=${USER_APPLICATION_PROFILE:-prod}
       - USER_APPLICATION_PORT=${USER_APPLICATION_PORT:-8081}
-      - CLIENT_ID=${CLIENT_ID:-default.client_id}
-      - CLIENT_SECRET=${CLIENT_SECRET:-default.client_secret}
-      - CLIENT_NAME=${CLIENT_NAME:-default.client_name}
+      - CLIENT_ID=${CLIENT_ID:-default.client-id}
+      - CLIENT_SECRET=${CLIENT_SECRET:-default.client-secret}
+      - CLIENT_NAME=${CLIENT_NAME:-default.client-name}
       - DB_NAME=${DB_NAME:-user-messaging-db}
       - DB_PASSWORD=${DB_PASSWORD:-teste123456}
       - DB_USERNAME=${DB_USERNAME:-java-user}
@@ -116,7 +116,7 @@ services:
         condition: service_healthy
     environment:
       - MAIL_APPLICATION_PROFILE=${MAIL_APPLICATION_PROFILE:-prod}
-      - KAFKA_URI=${KAFKA_URI:-kafka:9092}
+      - KAFKA_URL=${KAFKA_URL:-kafka:9092}
       - MAIL_HOST=${MAIL_HOST:-smtp.gmail.com}
       - MAIL_PORT=${MAIL_PORT:-587}
       - MAIL_USERNAME=${MAIL_USERNAME}

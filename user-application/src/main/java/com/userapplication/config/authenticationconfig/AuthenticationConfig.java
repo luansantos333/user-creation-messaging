@@ -118,6 +118,13 @@ public class AuthenticationConfig {
         return AuthorizationServerSettings.builder().build();
     }
 
+    @Bean
+    public org.springframework.security.web.firewall.HttpFirewall allowSemicolonHttpFirewall() {
+        org.springframework.security.web.firewall.StrictHttpFirewall firewall = new org.springframework.security.web.firewall.StrictHttpFirewall();
+        firewall.setAllowSemicolon(true);
+        return firewall;
+    }
+
 
     @Bean
     JWKSource<SecurityContext> jwkSource() throws NoSuchAlgorithmException {

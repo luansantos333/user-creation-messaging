@@ -10,6 +10,7 @@ spring:
       group-id: mail-service-group
       enable-auto-commit: true
       auto-commit-interval: ${AUTO_COMMIT_INTERVAL:5000}
+    bootstrap-servers: ${KAFKA_URL}
 
 management:
   endpoints:
