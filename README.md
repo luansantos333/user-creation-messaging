@@ -6,14 +6,16 @@ A microservices-based event-driven system demonstrating Spring Security OAuth2 A
 
 This project implements a secure, distributed user management system with automated email notifications. It consists of two Spring Boot applications that communicate asynchronously via Apache Kafka:
 
-1. **user-application**: A secure REST API for user and OAuth2 client management with an embedded authorization server
+1. **user-application**: A secure REST API for user and OAuth2 client management with an embedded OAuth2 authorization server
 2. **mail-application**: A Kafka-based email notification service that handles user lifecycle events
+
+The system is fully containerized with Docker and can be deployed using Docker Compose with PostgreSQL, Kafka, and Zookeeper.
 
 ## Key Features
 
 - **User Creation Notifications**: Automatic email notifications sent when new users are created
 - **Admin Access Grants**: Email alerts when users receive administrator permissions
-- **Password Reset Mechanism**: Token-based password reset flow with email delivery (in development)
+- **Password Reset Mechanism**: Token-based password reset flow with email delivery
 - **Event-Driven Architecture**: Asynchronous messaging using Apache Kafka for decoupled communication
 - **OAuth2 Authorization Server**: Full-featured OAuth2/OIDC provider with JWT support
 - **Role-Based Access Control (RBAC)**: Fine-grained security with ADMIN and USER roles
@@ -32,7 +34,7 @@ This project implements a secure, distributed user management system with automa
 │  • JPA/H2 Database             │────admin-grant────────>│  • User Creation         │
 │  • Kafka Event Producer         │                        │  • Admin Access Grant    │
 │                                 │────password-reset─────>│  • Password Reset        │
-│                                 │    (planned)           │    (planned)             │
+│                                 │                  │
 └─────────────────────────────────┘                        └──────────────────────────┘
 ```
 
@@ -50,7 +52,7 @@ This project implements a secure, distributed user management system with automa
    - User Application → Publishes `UserAdminAccessGrant` to `admin-grant` topic
    - Mail Application → Consumes event → Sends admin notification email
 
-3. **Password Reset Flow** (planned):
+3. **Password Reset Flow**:
    - User → POST /api/user/reset/{username} → User Application
    - User Application → Generates temporary token
    - User Application → Publishes `PasswordResetEvent` to `password-reset` topic
@@ -123,10 +125,15 @@ user-creation-messaging/
 
 ## Prerequisites
 
+### For Local Development
 - **Java 21** or higher
 - **Maven 3.8+**
 - **Apache Kafka** (or use Docker)
 - **PostgreSQL** (optional, for production profile)
+
+### For Docker Deployment
+- **Docker** 20.10+
+- **Docker Compose** 2.0+
 
 ## Configuration
 
@@ -168,7 +175,88 @@ spring:
 
 ## Getting Started
 
-### 1. Start Kafka
+### Option 1: Docker Compose (Recommended)
+
+The easiest way to run the entire application stack:
+
+#### 1. Create Environment File
+
+Create a `.env` file in the root directory with your mail configuration:
+
+```bash
+MAIL_USERNAME=your-email@gmail.com
+MAIL_PASSWORD=your-app-password
+```
+
+#### 2. Start All Services
+
+```bash
+docker-compose up -d
+```
+
+This will start:
+- **PostgreSQL** (port 5432): Production database
+- **Zookeeper** (port 2181): Kafka dependency
+- **Kafka** (port 9092): Message broker
+- **user-application** (port 8081): User management API with OAuth2 server
+- **mail-application** (port 8082): Email notification service
+
+#### 3. Initialize Database
+
+After the containers are running, you need to populate the database with initial data. Connect to the PostgreSQL database and run the SQL commands from `user-application/src/main/resources/import.sql`:
+
+```bash
+# Connect to PostgreSQL
+docker exec -it postgres-db psql -U java-user -d user-messaging-db
+
+# Then copy and paste the commands from import.sql:
+# - Insert users (joaozinho@gmail.com, pedrinho@gmail.com)
+# - Insert roles (ROLE_ADMIN, ROLE_USER)
+# - Assign roles to users
+```
+
+**Note**: The database does not auto-populate on startup when using `ddl-auto: update` in production profile. Manual initialization is required.
+
+#### 4. Check Service Health
+
+```bash
+# Check all services are running
+docker-compose ps
+
+# Check user-app health
+curl http://localhost:8081/actuator/health
+
+# Check mail-app health
+curl http://localhost:8082/actuator/health
+```
+
+#### 5. View Logs
+
+```bash
+# View all logs
+docker-compose logs -f
+
+# View specific service logs
+docker-compose logs -f user-app
+docker-compose logs -f mail-app
+docker-compose logs -f kafka
+```
+
+#### 6. Stop Services
+
+```bash
+# Stop all services
+docker-compose down
+
+# Stop and remove volumes (⚠️ deletes all data)
+docker-compose down -v
+```
+
+### Option 2: Local Development
+
+For local development with Maven:
+
+#### 1. Start Kafka
 
 Using Docker:
 ```bash
@@ -178,7 +266,7 @@ docker run -d --name kafka -p 9092:9092 \
 
 Or use your local Kafka installation.
 
-### 2. Build Applications
+#### 2. Build Applications
 
 ```bash
 # Build user-application
@@ -190,7 +278,7 @@ cd ../mail-application
 mvn clean install
 ```
 
-### 3. Run Applications
+#### 3. Run Applications
 
 Terminal 1 - User Application:
 ```bash
@@ -203,6 +291,74 @@ Terminal 2 - Mail Application:
 cd mail-application
 mvn spring-boot:run
 ```
+
+## Docker Deployment Details
+
+### Docker Images
+
+The project uses multi-stage Docker builds for optimized image sizes:
+
+- **user-application**: `luansantos333/user-application:0.0.3`
+- **mail-application**: `luansantos333/mail-application:0.0.2`
+
+### Building Custom Images
+
+If you need to build your own images:
+
+```bash
+# Build user-application image
+cd user-application
+docker build -t your-username/user-application:latest .
+
+# Build mail-application image
+cd ../mail-application
+docker build -t your-username/mail-application:latest .
+```
+
+### Environment Variables
+
+The `docker-compose.yml` file uses environment variables with sensible defaults:
+
+#### User Application
+```bash
+USER_APPLICATION_PROFILE=prod           # Spring profile
+USER_APPLICATION_PORT=8081             # Application port
+CLIENT_ID=default.client_id            # OAuth2 client ID
+CLIENT_SECRET=default.client_secret    # OAuth2 client secret
+CLIENT_NAME=default.client_name        # OAuth2 client name
+DB_NAME=user-messaging-db              # PostgreSQL database name
+DB_USERNAME=java-user                  # PostgreSQL username
+DB_PASSWORD=teste123456                # PostgreSQL password
+KAFKA_URI=kafka:9092                   # Kafka bootstrap servers
+POSTGRES_URL=postgresql                # PostgreSQL host
+POSTGRES_PORT=5432                     # PostgreSQL port
+REDIRECT_URI=https://www.google.com.br # OAuth2 redirect URI
+TOKEN_TTL=3600                         # JWT token TTL in seconds
+```
+
+#### Mail Application
+```bash
+MAIL_APPLICATION_PROFILE=prod     # Spring profile
+KAFKA_URL=kafka:9092             # Kafka bootstrap servers
+MAIL_HOST=smtp.gmail.com         # SMTP server
+MAIL_PORT=587                    # SMTP port
+MAIL_USERNAME=${MAIL_USERNAME}   # From .env file
+MAIL_PASSWORD=${MAIL_PASSWORD}   # From .env file
+```
+
+### Data Persistence
+
+Docker volumes are used for data persistence:
+
+```yaml
+volumes:
+  postgres_data:      # PostgreSQL database files
+  kafka_data:         # Kafka message logs
+  zookeeper_data:     # Zookeeper data
+  zookeeper_logs:     # Zookeeper logs
+```
+
+Data persists across container restarts unless you use `docker-compose down -v`.
 
 ## API Endpoints
 
@@ -255,12 +411,34 @@ PATCH /api/user/grant/{username}
 - **Response**: 204 No Content
 - **Side Effect**: Sends admin access notification email via Kafka
 
-#### Password Reset (Planned)
+#### Request Password Reset Token
 ```http
-POST /api/user/reset/{username}
+POST /api/user/reset/token
+Content-Type: application/json
+
+{
+  "username": "user@example.com"
+}
 ```
-- **Status**: Commented out in `UserController.java:75-80`
-- **Planned Feature**: Will generate temporary reset token and send email
+- **Access**: Public
+- **Response**: Returns `PasswordResetTokenDTO` with reset token
+- **Side Effect**: Sends password reset email with token via Kafka
+- **Token Expiry**: 30 minutes
+
+#### Reset Password
+```http
+PUT /api/user/password?token={token}&username={username}&newPassword={newPassword}
+```
+- **Access**: Public
+- **Parameters**:
+  - `token` (required): The reset token received via email
+  - `username` (required): User's email address
+  - `newPassword` (required): New password to set
+- **Response**: 204 No Content
+- **Security**:
+  - Validates token exists and hasn't expired
+  - Verifies token belongs to the specified user
+  - Deletes token after successful password reset
 
 ### OAuth2 Client Management
 
@@ -289,7 +467,7 @@ The application includes a Spring Authorization Server that supports:
 |------------|----------|----------|------------|
 | `user-created` | user-application | mail-application | `UserCreatedEvent` |
 | `admin-grant` | user-application | mail-application | `UserAdminAccessGrant` |
-| `password-reset` | user-application | mail-application | `PasswordResetEvent` (planned) |
+| `password-reset` | user-application | mail-application | `PasswordResetTokenEvent` |
 
 ### Event DTOs
 
@@ -317,17 +495,21 @@ The application includes a Spring Authorization Server that supports:
 - **Consumer**: `MailService.sendEmailUserHasAdminAccess()`
 - **Email Template**: Admin access notification with custom message
 
-#### PasswordResetEvent (Planned)
+#### PasswordResetTokenEvent
 ```java
 {
-  "email": "user@example.com",
-  "resetToken": "abc123...",
-  "expiryTimestamp": "2025-11-09T13:00:00Z"
+  "token": "550e8400-e29b-41d4-a716-446655440000",
+  "expirationTime": "2025-11-09T13:00:00Z",
+  "username": "user@example.com"
 }
 ```
-- **Planned Trigger**: Password reset request
-- **Planned Consumer**: Mail service to send reset link
-- **Email Template**: Reset link with temporary token embedded in URL
+- **Triggered by**: Password reset request via POST /api/user/reset/token
+- **Consumer**: `MailService.sendResetTokenToEmail()` (`MailService.java:61-80`)
+- **Email Template**: Password reset token with instructions
+  - **Subject**: "Password reset Token"
+  - **Body**: Reset token and API endpoint instructions
+  - **Token Validity**: 30 minutes
+- **Security**: Token is stored in database (`tb_reset_token`) with user association and expiration time
 
 ## Security
 
@@ -497,57 +679,79 @@ This project demonstrates key microservices principles:
 - **Scalability**: Scale services independently based on load
 - **Event-Driven**: Loose coupling through asynchronous messaging
 
-## Future Enhancements
+## API Documentation
 
-### Password Reset Implementation
+### Swagger/OpenAPI
 
-The password reset feature is outlined in the codebase but not yet implemented. Here's the planned flow:
+The User Application includes interactive API documentation powered by SpringDoc OpenAPI 3.
 
-1. **User requests password reset**:
-   ```http
-   POST /api/user/reset/{username}
-   ```
+#### Access Swagger UI
 
-2. **Backend generates secure token**:
-   - Create time-limited token (e.g., 1 hour expiry)
-   - Store token with user association in database
-   - Publish `PasswordResetEvent` to Kafka
+- **Local Development**: http://localhost:8081/swagger-ui/index.html
+- **Docker**: http://localhost:8081/swagger-ui/index.html
 
-3. **Email sent with reset link**:
-   ```
-   Subject: Password Reset Request
-   Body: Click here to reset your password:
-         http://app.com/reset-password?token=abc123xyz...
+The Swagger UI provides:
+- **Interactive API Testing**: Try out endpoints directly from the browser
+- **Request/Response Examples**: See example payloads for all endpoints
+- **Schema Definitions**: View DTO structures and validation rules
+- **Authentication**: Test secured endpoints with JWT tokens
 
-   This link expires in 1 hour.
-   ```
+#### OpenAPI Specification
 
-4. **User clicks link and submits new password**:
-   ```http
-   PUT /api/user/password
-   Content-Type: application/json
+- **JSON Format**: http://localhost:8081/v3/api-docs
+- **YAML Format**: http://localhost:8081/v3/api-docs.yaml
 
-   {
-     "token": "abc123xyz...",
-     "newPassword": "newSecurePassword456"
-   }
-   ```
+#### Security Configuration
 
-5. **Backend validates and updates**:
-   - Verify token exists and hasn't expired
-   - Verify token hasn't been used
-   - Update user password
-   - Invalidate token
-   - Send confirmation email (optional)
+Swagger endpoints are publicly accessible (configured in `AuthenticationConfig.java:88-90`):
+- `/swagger-ui/**` - Swagger UI resources
+- `/swagger-ui.html` - Main Swagger page
+- `/v3/api-docs/**` - OpenAPI specification
 
-### Implementation Files to Create
+#### Using Swagger with OAuth2
 
-- `PasswordResetTokenEntity.java`: JPA entity for storing reset tokens
-- `PasswordResetTokenRepository.java`: Repository for token management
-- `PasswordResetEvent.java`: Kafka event DTO
-- Update `UserController.java`: Uncomment and implement reset endpoints
-- Update `UserService.java`: Add reset token generation and validation logic
-- Update `MailService.java`: Add password reset email consumer
+To test secured endpoints:
+
+1. Obtain a JWT token via OAuth2 authorization code flow
+2. Click "Authorize" in Swagger UI
+3. Enter the token in the format: `Bearer {your-jwt-token}`
+4. Test protected endpoints with the authenticated session
+
+## Password Reset Implementation
+
+The password reset feature is **fully implemented** with the following components:
+
+### Database
+- **Entity**: `PassswordResetTokenEntity.java` - Stores reset tokens with user association and expiration
+- **Table**: `tb_reset_token` - Persists token data
+- **Token Validity**: 30 minutes (configurable via `PassswordResetTokenEntity.expirationTimeInMinutes`)
+
+### Endpoints
+- **Request Token**: POST /api/user/reset/token (`UserController.java:78-85`)
+- **Reset Password**: PUT /api/user/password (`UserController.java:87-96`)
+
+### Service Layer
+- **Token Generation**: `UserService.createPasswordResetToken()` (`UserService.java:139-151`)
+  - Generates UUID token
+  - Stores in database with user association
+  - Publishes Kafka event to mail service
+- **Password Reset**: `UserService.resetUserPassword()` (`UserService.java:155-174`)
+  - Validates token existence and expiration
+  - Verifies token ownership
+  - Updates password with BCrypt encoding
+  - Deletes token after use
+
+### Kafka Integration
+- **Event**: `PasswordResetTokenEvent.java` - Contains token, expiration time, and username
+- **Topic**: `password-reset`
+- **Consumer**: `MailService.sendResetTokenToEmail()` (`MailService.java:61-80`)
+
+### Security Features
+- Token must belong to the user requesting password reset
+- Tokens expire after 30 minutes
+- One-time use (deleted after successful password reset)
+- Throws `CredentialExpiredException` for invalid/expired tokens
+- Throws `AccessDeniedException` for token ownership violations
 
 ## Development Notes
 
@@ -556,7 +760,7 @@ The password reset feature is outlined in the codebase but not yet implemented. 
 - The application uses Lombok annotations to reduce boilerplate code
 - Spring Security debug logging is enabled by default for development
 - H2 console is available for database inspection during development
-- Password reset endpoint is commented out in `UserController.java:74-80` (planned feature)
+- Password reset functionality is **fully implemented** and operational
 
 ## Troubleshooting
 
