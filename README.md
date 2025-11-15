@@ -181,12 +181,35 @@ The easiest way to run the entire application stack:
 
 #### 1. Create Environment File
 
-Create a `.env` file in the root directory with your mail configuration:
+Create a `.env` file in the root directory based on `.env-example`:
 
 ```bash
-MAIL_USERNAME=your-email@gmail.com
-MAIL_PASSWORD=your-app-password
+# Copy the example file
+cp .env-example .env
+
+# Edit .env and configure all required variables
 ```
+
+**Required Environment Variables:**
+- `DB_PASSWORD` - PostgreSQL database password
+- `DB_USERNAME` - PostgreSQL database username
+- `CLIENT_ID` - OAuth2 client ID
+- `CLIENT_SECRET` - OAuth2 client secret (use a strong, random value)
+- `CLIENT_NAME` - OAuth2 client name
+- `MAIL_USERNAME` - SMTP username (your email address)
+- `MAIL_PASSWORD` - SMTP password or app-specific password
+- `MAIL_HOST` - SMTP server host (e.g., smtp.gmail.com)
+- `MAIL_PORT` - SMTP server port (587 for TLS, 465 for SSL)
+
+**Optional Variables (have defaults):**
+- `DB_NAME` - Database name (default: user-messaging-db)
+- `REDIRECT_URI` - OAuth2 redirect URI (default: https://www.google.com.br)
+- `TOKEN_TTL` - JWT token time-to-live in seconds (default: 3600)
+- `KAFKA_URI` - Kafka bootstrap servers (default: kafka:9092)
+- `USER_APPLICATION_PROFILE` - Spring profile (default: prod)
+- `MAIL_APPLICATION_PROFILE` - Spring profile (default: prod)
+
+See `.env-example` for a complete template with detailed descriptions.
 
 #### 2. Start All Services
 
@@ -196,8 +219,8 @@ docker-compose up -d
 
 This will start:
 - **PostgreSQL** (port 5432): Production database
-- **Zookeeper** (port 2181): Kafka dependency
-- **Kafka** (port 9092): Message broker
+- **Zookeeper** (internal only): Kafka dependency
+- **Kafka** (internal only): Message broker
 - **user-application** (port 8081): User management API with OAuth2 server
 - **mail-application** (port 8082): Email notification service
 
@@ -317,33 +340,66 @@ docker build -t your-username/mail-application:latest .
 
 ### Environment Variables
 
-The `docker-compose.yml` file uses environment variables with sensible defaults:
+The `docker-compose.yml` file uses environment variables for secure configuration:
 
-#### User Application
+#### Security Best Practices
+- **Required variables** fail-fast with clear error messages if not provided
+- **No hardcoded credentials** in docker-compose.yml
+- **Sensitive data** loaded from `.env` file (gitignored)
+- **Kafka and Zookeeper** exposed only internally (not accessible from host)
+- **PostgreSQL** exposed on port 5432 for manual database initialization
+
+#### User Application Environment Variables
 ```bash
-USER_APPLICATION_PROFILE=prod           # Spring profile
-USER_APPLICATION_PORT=8081             # Application port
-CLIENT_ID=default.client_id            # OAuth2 client ID
-CLIENT_SECRET=default.client_secret    # OAuth2 client secret
-CLIENT_NAME=default.client_name        # OAuth2 client name
-DB_NAME=user-messaging-db              # PostgreSQL database name
-DB_USERNAME=java-user                  # PostgreSQL username
-DB_PASSWORD=teste123456                # PostgreSQL password
-KAFKA_URI=kafka:9092                   # Kafka bootstrap servers
-POSTGRES_URL=postgresql                # PostgreSQL host
-POSTGRES_PORT=5432                     # PostgreSQL port
+# Required (must be set in .env file)
+CLIENT_ID                         # OAuth2 client ID
+CLIENT_SECRET                     # OAuth2 client secret (use strong value)
+CLIENT_NAME                       # OAuth2 client name
+DB_PASSWORD                       # PostgreSQL password
+
+# Optional (have defaults)
+USER_APPLICATION_PROFILE=prod     # Spring profile
+USER_APPLICATION_PORT=8081        # Application port
+DB_NAME=user-messaging-db         # PostgreSQL database name
+DB_USERNAME=java-user             # PostgreSQL username
+KAFKA_URI=kafka:9092             # Kafka bootstrap servers
+POSTGRES_URL=postgresql           # PostgreSQL host
+POSTGRES_PORT=5432               # PostgreSQL port
 REDIRECT_URI=https://www.google.com.br # OAuth2 redirect URI
-TOKEN_TTL=3600                         # JWT token TTL in seconds
+TOKEN_TTL=3600                   # JWT token TTL in seconds
 ```
 
-#### Mail Application
+#### Mail Application Environment Variables
 ```bash
-MAIL_APPLICATION_PROFILE=prod     # Spring profile
-KAFKA_URL=kafka:9092             # Kafka bootstrap servers
-MAIL_HOST=smtp.gmail.com         # SMTP server
-MAIL_PORT=587                    # SMTP port
-MAIL_USERNAME=${MAIL_USERNAME}   # From .env file
-MAIL_PASSWORD=${MAIL_PASSWORD}   # From .env file
+# Required (must be set in .env file)
+MAIL_HOST                        # SMTP server (e.g., smtp.gmail.com)
+MAIL_PORT                        # SMTP port (587 for TLS)
+MAIL_USERNAME                    # SMTP username (email address)
+MAIL_PASSWORD                    # SMTP password or app password
+
+# Optional (have defaults)
+MAIL_APPLICATION_PROFILE=prod    # Spring profile
+KAFKA_URL=kafka:9092            # Kafka bootstrap servers
+```
+
+#### Network Security
+```yaml
+# Internal services (not accessible from host)
+zookeeper:
+  expose: [2181]  # Internal only
+
+kafka:
+  expose: [9092]  # Internal only
+
+# External services
+postgresql:
+  ports: ["5432:5432"]  # Exposed for database initialization
+
+user-app:
+  ports: ["8081:8081"]  # REST API and OAuth2 server
+
+mail-app:
+  ports: ["8082:8082"]  # Health endpoint
 ```
 
 ### Data Persistence
@@ -421,24 +477,34 @@ Content-Type: application/json
 }
 ```
 - **Access**: Public
-- **Response**: Returns `PasswordResetTokenDTO` with reset token
+- **Response**: 204 No Content (token not returned for security)
 - **Side Effect**: Sends password reset email with token via Kafka
 - **Token Expiry**: 30 minutes
+- **Security**: Token is sent only via email, never exposed in API response
 
 #### Reset Password
 ```http
-PUT /api/user/password?token={token}&username={username}&newPassword={newPassword}
+PUT /api/user/password
+Content-Type: application/json
+
+{
+  "username": "user@example.com",
+  "token": "550e8400-e29b-41d4-a716-446655440000",
+  "newPassword": "newSecurePassword123"
+}
 ```
 - **Access**: Public
-- **Parameters**:
-  - `token` (required): The reset token received via email
+- **Request Body**:
   - `username` (required): User's email address
+  - `token` (required): The reset token received via email
   - `newPassword` (required): New password to set
 - **Response**: 204 No Content
 - **Security**:
+  - All sensitive data passed in request body (not query parameters)
   - Validates token exists and hasn't expired
   - Verifies token belongs to the specified user
   - Deletes token after successful password reset
+  - Password is BCrypt hashed before storage
 
 ### OAuth2 Client Management
 
@@ -545,13 +611,25 @@ The User Application implements comprehensive security measures:
 - **JWT Token Authentication**: Stateless authentication
 - **Authorization Context**: Uses `SecurityContextHolder` for request-scoped security
 - **Access Denied Handling**: Throws `AccessDeniedException` for unauthorized access
-- **Security Logging**: DEBUG level logging enabled for development
+- **Security Logging**: WARN level in production (application-prod.yml:43), DEBUG in development
+- **No Credentials in Code**: All sensitive values loaded from environment variables
+- **Password Reset Tokens**: Sent only via email, never in API responses
+- **Request Body Security**: Sensitive data (passwords, tokens) in request body, not query params
+- **Production SQL Logging**: Disabled (`show-sql: false`) to prevent data leaks
 
 ### Security Configuration Files
 - `AuthenticationConfig.java`: OAuth2 and JWT configuration
 - `JwtTokenCustomizer.java`: Custom JWT claims
 - `JwtAuthenticationConverter.java`: JWT to Spring Security authentication conversion
 - `CustomOAuth2Provider.java`: Custom OAuth2 provider configuration
+
+### Docker Security
+- **Network Isolation**: Kafka and Zookeeper accessible only within Docker network
+- **Required Credentials**: docker-compose fails-fast if required environment variables not set
+- **No Default Passwords**: All credentials must be explicitly provided via .env file
+- **.env File Protection**: .env is gitignored to prevent credential leaks
+- **Health Checks**: All services have health checks with proper restart policies
+- **Read-only Volumes**: Data volumes for PostgreSQL, Kafka, and Zookeeper persistence
 
 ## Database
 
