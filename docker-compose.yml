@@ -4,7 +4,7 @@ services:
     image: postgres:18.0-alpine3.22
     container_name: postgres-db
     environment:
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-teste123456}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Database password is required}
       POSTGRES_USER: ${DB_USERNAME:-java-user}
       POSTGRES_DB: ${DB_NAME:-user-messaging-db}
     ports:
@@ -87,7 +87,7 @@ services:
       - CLIENT_SECRET=${CLIENT_SECRET:-default.client-secret}
       - CLIENT_NAME=${CLIENT_NAME:-default.client-name}
       - DB_NAME=${DB_NAME:-user-messaging-db}
-      - DB_PASSWORD=${DB_PASSWORD:-teste123456}
+      - DB_PASSWORD=${DB_PASSWORD}
       - DB_USERNAME=${DB_USERNAME:-java-user}
       - KAFKA_URI=${KAFKA_URI:-kafka:9092}
       - POSTGRES_PORT=${POSTGRES_PORT:-5432}

@@ -8,7 +8,7 @@ spring:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
       ddl-auto: update
-    show-sql: true
+    show-sql: false
     defer-datasource-initialization: true
 
   kafka:
@@ -40,4 +40,4 @@ logging:
   level:
     org:
       springframework:
-        security: DEBUG
+        security: warn

@@ -1,9 +1,6 @@
 package com.userapplication.service;
 
-import com.userapplication.dto.PasswordResetTokenDTO;
-import com.userapplication.dto.RoleDTO;
-import com.userapplication.dto.UserDTO;
-import com.userapplication.dto.UserSecureDTO;
+import com.userapplication.dto.*;
 import com.userapplication.dto.kafka.PasswordResetTokenEvent;
 import com.userapplication.dto.kafka.UserAdminAccessGrant;
 import com.userapplication.dto.kafka.UserCreatedEvent;
@@ -85,7 +82,7 @@ public class UserService {
 
 
     @Transactional(readOnly = true)
-    public UserDTO getUserByUsername(String username) {
+    public UserSecureDTO getUserByUsername(String username) {
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
@@ -94,7 +91,7 @@ public class UserService {
         if (authentication.getAuthorities().stream().anyMatch(x -> x.getAuthority().equals("ROLE_ADMIN") || authentication.getName().equals(user.getUsername()))) {
 
 
-            return new UserDTO(user.getUsername(), user.getPassword(), user.getRoles().stream().map(role -> new RoleDTO(role.getRoleName())).collect(Collectors.toSet()));
+            return new UserSecureDTO(user.getId(), user.getUsername(), user.getRoles().stream().map(role -> new RoleDTO(role.getRoleName())).collect(Collectors.toSet()));
 
         }
 
@@ -152,22 +149,22 @@ public class UserService {
 
 
     @Transactional
-    public void resetUserPassword(String username, String token, String password) throws CredentialExpiredException {
-        PassswordResetTokenEntity tokenEntity = tokenRepository.findByToken(token)
+    public void resetUserPassword(PasswordResetDTO password) throws CredentialExpiredException {
+        PassswordResetTokenEntity tokenEntity = tokenRepository.findByToken(password.token())
                 .orElseThrow(() -> new CredentialExpiredException("Invalid or expired token"));
 
         if (tokenEntity.getExpirationTime().isBefore(Instant.now())) {
             throw new CredentialExpiredException("Token has expired");
         }
 
-        UserEntity user = userRepository.findByUsername(username)
+        UserEntity user = userRepository.findByUsername(password.username())
                 .orElseThrow(() -> new UsernameNotFoundException("No user found with this username"));
 
         if (!tokenEntity.getUser().equals(user)) {
             throw new AccessDeniedException("Token does not belong to this user");
         }
 
-        user.setPassword(passwordEncoder.encode(password));
+        user.setPassword(passwordEncoder.encode(password.newPassword()));
         userRepository.save(user);
 
         tokenRepository.delete(tokenEntity);

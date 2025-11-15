@@ -84,7 +84,8 @@ public class AuthenticationConfig {
 
         http.authorizeHttpRequests((authorize) ->
                         authorize.requestMatchers(HttpMethod.POST, "/api/user").permitAll().
-                                requestMatchers(HttpMethod.POST, "/api/user/reset/token/**").permitAll().requestMatchers("/actuator/**")
+                                requestMatchers(HttpMethod.POST, "/api/user/reset/token/**").permitAll()
+                                .requestMatchers(HttpMethod.PUT, "/api/user/password").permitAll().requestMatchers("/actuator/**")
                                 .permitAll().requestMatchers("/v3/api-docs/**").permitAll().
                                 requestMatchers("/swagger-ui/**").permitAll().
                                 requestMatchers("swagger-ui.html").permitAll().

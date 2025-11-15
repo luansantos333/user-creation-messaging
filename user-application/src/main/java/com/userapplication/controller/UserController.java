@@ -1,9 +1,6 @@
 package com.userapplication.controller;
 
-import com.userapplication.dto.PasswordResetTokenDTO;
-import com.userapplication.dto.UserDTO;
-import com.userapplication.dto.UserResetTokenDTO;
-import com.userapplication.dto.UserSecureDTO;
+import com.userapplication.dto.*;
 import com.userapplication.service.UserService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -46,9 +43,9 @@ public class UserController {
 
     @GetMapping("/{username}")
     @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_USER')")
-    public ResponseEntity<UserDTO> getUserByUsername(@PathVariable String username) {
+    public ResponseEntity<UserSecureDTO> getUserByUsername(@PathVariable String username) {
 
-        UserDTO user = userService.getUserByUsername(username);
+        UserSecureDTO user = userService.getUserByUsername(username);
 
         return ResponseEntity.ok().body(user);
     }
@@ -76,20 +73,19 @@ public class UserController {
     }
 
     @PostMapping ("/reset/token")
-    public ResponseEntity<PasswordResetTokenDTO> getResetToken (@RequestBody UserResetTokenDTO userResetTokenDTO) {
+    public ResponseEntity<Void> getResetToken (@RequestBody UserResetTokenDTO userResetTokenDTO) {
 
-        PasswordResetTokenDTO passwordResetToken = userService.createPasswordResetToken(userResetTokenDTO.username());
+        userService.createPasswordResetToken(userResetTokenDTO.username());
 
-        return ResponseEntity.ok().body(passwordResetToken);
+        return ResponseEntity.noContent().build();
 
     }
 
     @PutMapping ("/password")
-    public ResponseEntity<Void> resetPassword (@RequestParam (required = true) String token, @RequestParam (required = true) String username,
-                                               @RequestParam (required = true) String newPassword) throws CredentialExpiredException {
+    public ResponseEntity<Void> resetPassword (@RequestBody PasswordResetDTO newPassword) throws CredentialExpiredException {
 
 
-        userService.resetUserPassword(username, token, newPassword);
+        userService.resetUserPassword(newPassword);
 
 
         return ResponseEntity.noContent().build();
